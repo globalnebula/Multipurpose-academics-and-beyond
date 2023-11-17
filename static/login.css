@@ -1,0 +1,86 @@
+body{
+    background-color: #012a4a;
+    font-family: 'Quicksand', sans-serif;
+}
+
+.container{
+    padding:100px;
+    background-color: rgba(230, 219, 219, 0.501);
+    min-height: 300px;
+    max-height: 300px;
+    max-width: 300px;
+    min-width: 300px;
+    border-radius: 15px;
+    position:absolute;
+    top: 100px;
+    left: 485px;
+    box-shadow: 10px 10px 20px rgba(0, 0, 0, 0.5);
+}
+
+.blur{
+    background-color: pink;
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    filter: blur(72px);
+}
+
+#top{
+    position: absolute;
+    left: 400px;
+}
+
+#bottom{
+    position: absolute;
+    left: 750px;
+    top: 370px;
+}
+
+
+input[type='text']{
+    border-color: pink;
+    background-color: #e4e4e4;
+    border-radius: 30px;
+    overflow-x: auto;
+    padding: 15px;
+    margin: 20px;
+    margin-left: 70px;
+    margin-bottom: 63px;
+    text-align: center;
+}
+
+input[type='password']{
+    border-color: pink;
+    background-color: #e4e4e4;
+    border-radius: 30px;
+    overflow-x: auto;
+    padding: 15px;
+    margin: 20px;
+    margin-left: 70px;
+    text-align: center;
+}
+
+
+input[type='submit']{
+    border-color: pink;
+    background-color: #e4e4e4;
+    border-radius: 30px;
+    overflow-x: auto;
+    padding: 15px;
+    margin: 20px;
+    margin-top: 50px;
+    margin-left: 125px;
+    text-align: center;
+    font-family: 'Quicksand', sans-serif;
+    min-width: 80px;
+    transition: transform 0.5s ease-in-out;
+    background-color: beige;
+    color: pink;
+}
+
+input[type="submit"]:hover{
+     transform: translateY(-5px);
+     float: left;
+     background-color: pink;
+     color: beige;
+}
