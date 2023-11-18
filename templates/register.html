@@ -3,28 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='register.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500&display=swap" rel="stylesheet">
-    <title>Log In</title>
+    <title>Sign Up</title>
 </head>
 <body>
   <div class="blur" id="top"></div>
   <div class="blur" id="bottom"></div>
-  <form action="{{ url_for('login') }}" method="post">
+  <form action="{{ url_for('register') }}" method="post">
     <div class="container">
-      <div class="heading">Log In</div>
+      <div class="heading">Sign Up</div>
+      <div class="email">
+        <input class="email" type="email" name="email" id="email"  placeholder="Email">
+     </div>    
       <div class="username">
         <input type="text" name="username" id="username"  placeholder="Username">
       </div>
       <div class="password">
         <input type="password" name="password" id="password"  placeholder="Password">
       </div>
-      <div class="submit">
-        <input type="submit" name="submit-btn" id="submit" value="Submit">
+      <div class="password">
+        <input type="password" name="confirm-password" id="confirm-password"  placeholder="Confirm Password">
       </div>
-      <p class="account">Dont have an account?<a href="/register"> Sign up now!</a></p>
+      <div class="submit">
+        <input type="submit" name="submit-btn" id="" value="Submit">
+      </div>
+      <p class="account">Already have an account?<a href="/"> Log In here!</a></p>
     </div>
     </form>
     

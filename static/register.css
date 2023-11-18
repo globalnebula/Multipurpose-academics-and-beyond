@@ -43,6 +43,16 @@ body{
     top: 370px;
 }
 
+input[type='email']{
+    border-color: #020b31;
+    background-color: #e4e4e4;
+    border-radius: 30px;
+    overflow-x: auto;
+    padding: 15px;
+    margin-left: -54px;
+    margin-bottom: 63px;
+    text-align: center;
+}
 
 input[type='text']{
     border-color: #020b31;
@@ -50,9 +60,9 @@ input[type='text']{
     border-radius: 30px;
     overflow-x: auto;
     padding: 15px;
-    margin: 20px;
-    margin-left: 70px;
-    margin-bottom: 63px;
+    margin-left: -52px;
+    margin-top: -78px;
+    margin-bottom: -4px;
     text-align: center;
 }
 
@@ -62,8 +72,8 @@ input[type='password']{
     border-radius: 30px;
     overflow-x: auto;
     padding: 15px;
-    margin: 20px;
-    margin-left: 70px;
+    margin: 10px;
+    margin-left: 186px;
     text-align: center;
 }
 
@@ -82,9 +92,8 @@ input[type='submit']{
     border-radius: 30px;
     overflow-x: auto;
     padding: 15px;
-    margin: 20px;
-    margin-top: 50px;
-    margin-left: 125px;
+    margin-top: -20px;
+    margin-left: -52px;
     text-align: center;
     font-family: 'Quicksand', sans-serif;
     min-width: 80px;
@@ -101,8 +110,9 @@ input[type="submit"]:hover{
 }
 
 .account{
-    position: relative;
-    left: 40px;
+    position: absolute;
+    left: 55px;
+    top: 425px;
 }
 
 a{
