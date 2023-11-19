@@ -19,6 +19,9 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(50), nullable=False, unique=True)
     password = db.Column(db.String(128), nullable=False)
 
+    def get_id(self):
+        return str(self.sno)
+
 class Questions(db.Model):
     sno = db.Column(db.Integer, primary_key=True)
     question = db.Column(db.String(250), nullable=False, unique=True)
@@ -39,7 +42,7 @@ def login():
 
         if user and check_password_hash(user.password, password):
             login_user(user)
-            return render_template('home.html')
+            return redirect(url_for('home'))
         else:
             flash('Incorrect username or password!')
             return render_template('login.html')
