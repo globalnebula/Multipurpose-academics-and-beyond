@@ -49,7 +49,7 @@ def login():
 
     return render_template('login.html')
 
-@app.route('/home')
+@app.route('/home')#, method="POST")
 @login_required
 def home():
     return render_template('home.html')

@@ -12,6 +12,7 @@ input[type='text']{
     margin-left: 70px;
     margin-bottom: 63px;
     text-align: left;
+    box-shadow: 10px 10px 20px rgba(0, 0, 0, 0.5);
 }
 
 .material-symbols-outlined {
@@ -57,4 +58,15 @@ input[type='text']{
     right: 15px;
     transform: translateY(-50%);
     cursor: pointer;
+}
+
+.card{
+    background-color: rgba(230, 219, 219, 0.501);
+    min-height: 300px;
+    max-height: 300px;
+    max-width: 300px;
+    min-width: 300px;
+    border-radius: 30px;
+    margin-left: 70px;
+    box-shadow: 10px 10px 20px rgba(0, 0, 0, 0.5);
 }
