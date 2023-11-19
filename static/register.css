@@ -115,6 +115,18 @@ input[type="submit"]:hover{
     top: 425px;
 }
 
+.error{
+    min-height: fit-content;
+    min-width: fit-content;
+}
+
+  
+.error{
+    min-height: 400px;
+    min-width: 400px;
+}
+
+
 a{
     text-decoration: none;
 }

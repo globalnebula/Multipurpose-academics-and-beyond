@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='register.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,7 +18,7 @@
       <div class="heading">Sign Up</div>
       <div class="email">
         <input class="email" type="email" name="email" id="email"  placeholder="Email">
-     </div>    
+      </div>    
       <div class="username">
         <input type="text" name="username" id="username"  placeholder="Username">
       </div>
@@ -32,7 +33,20 @@
       </div>
       <p class="account">Already have an account?<a href="/"> Log In here!</a></p>
     </div>
-    </form>
-    
+  </form>
+  <div class="error">
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <script>
+      Swal.fire({
+        title: 'Message',
+        text: '{{ messages[0] }}',
+        icon: 'info',
+        confirmButtonText: 'OK',
+      });
+    </script>
+  {% endif %}
+{% endwith %}
+</div>
 </body>
 </html>

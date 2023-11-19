@@ -3,15 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500&display=swap" rel="stylesheet">
     <title>Log In</title>
 </head>
 <body>
+  
   <div class="blur" id="top"></div>
   <div class="blur" id="bottom"></div>
+  
   <form action="{{ url_for('login') }}" method="post">
     <div class="container">
       <div class="heading">Log In</div>
@@ -27,6 +31,19 @@
       <p class="account">Dont have an account?<a href="/register"> Sign up now!</a></p>
     </div>
     </form>
-    
+    <div class="error">
+      {% with messages = get_flashed_messages() %}
+      {% if messages %}
+      <script>
+        Swal.fire({
+          title: 'Oops',
+          text: '{{ messages[0] }}',
+          icon: 'info',
+          confirmButtonText: 'OK',
+        });
+      </script>
+    {% endif %}
+  {% endwith %}
+  </div>
 </body>
 </html>
