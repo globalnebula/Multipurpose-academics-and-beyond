@@ -1,0 +1,60 @@
+body{
+    background-color: aliceblue;
+}
+
+input[type='text']{
+    border-color: #020b31;
+    background-color: #e4e4e4;
+    border-radius: 30px;
+    overflow-x: auto;
+    padding: 15px;
+    margin: 20px;
+    margin-left: 70px;
+    margin-bottom: 63px;
+    text-align: left;
+}
+
+.material-symbols-outlined {
+  font-variation-settings:
+  'FILL' 0,
+  'wght' 400,
+  'GRAD' 0,
+  'opsz' 24
+}
+
+.searchBar {
+    position: relative;
+    display: inline-block;
+}
+
+#search {
+    border-color: #020b31;
+    background-color: #e4e4e4;
+    border-radius: 30px;
+    padding: 15px;
+    margin: 20px;
+    margin-left: 70px;
+    margin-bottom: 63px;
+    text-align: left;
+    padding-right: 40px;
+}
+
+#searchButton {
+    position: absolute;
+    background: none;
+    border: none;
+    font-size: larger;
+    font-size: inherit;
+    cursor: pointer;
+    top: 43px;
+    left: 243px;
+}
+
+
+.material-symbols-outlined {
+    position: absolute;
+    top: 50%;
+    right: 15px;
+    transform: translateY(-50%);
+    cursor: pointer;
+}
