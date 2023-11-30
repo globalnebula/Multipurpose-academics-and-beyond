@@ -18,9 +18,14 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(20), nullable=False, unique=True)
     email = db.Column(db.String(50), nullable=False, unique=True)
     password = db.Column(db.String(128), nullable=False)
+    is_admin = db.Column(db.Boolean, default=False)
 
     def get_id(self):
         return str(self.sno)
+    
+ADMIN_USERNAME = 'admin'
+ADMIN_PASSWORD = 'admin'
+
 
 class Questions(db.Model):
     sno = db.Column(db.Integer, primary_key=True)
@@ -44,7 +49,13 @@ def login():
 
         if user and check_password_hash(user.password, password):
             login_user(user)
-            return redirect(url_for('home'))
+
+            if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+                user.is_admin=True
+                db.session.commit()
+                return redirect(url_for('admin_dashboard'))
+            else:
+                return redirect(url_for('home'))
         else:
             flash('Incorrect username or password!')
             return render_template('login.html')
@@ -52,12 +63,37 @@ def login():
     return render_template('login.html')
 
 
+@app.route('/admin/dashboard', methods=['GET', 'POST'])
+@login_required
+def admin_dashboard():
+    if not current_user.is_admin:
+        flash('Access denied. You are not an admin.')
+        return redirect(url_for('home'))
+
+    if request.method == 'POST':
+        question_text = request.form.get('question_text')
+        year = request.form.get('year')
+        topic = request.form.get('topic')
+
+        new_question = Questions(question=question_text, year=year, topic=topic)
+        db.session.add(new_question)
+        db.session.commit()
+        flash('Question added successfully!')
+
+    return render_template('admin_dashboard.html')
+
+
+
 @app.route('/home', methods=['GET', 'POST'])
 @login_required
 def home():
-    search_results = []
+    if request.method == 'POST':
+        target_word = request.form.get('target_word')
+        search_results = Questions.query.filter(Questions.question.ilike(f"%{target_word}%")).all()
 
-    return render_template('home.html', search_results=search_results)
+        return render_template('home.html', search_results=search_results)
+
+    return render_template('home.html', search_results=None)
 
 
 @app.route('/register', methods=['GET', 'POST'])

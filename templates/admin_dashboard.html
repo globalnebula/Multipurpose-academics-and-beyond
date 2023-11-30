@@ -1,0 +1,24 @@
+<!-- admin_dashboard.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Add your head content here -->
+    <title>Admin Dashboard</title>
+</head>
+<body>
+    <h1>Welcome, Admin!</h1>
+
+    <form action="/admin/dashboard" method="post">
+        <label for="question_text">Question:</label>
+        <input type="text" name="question_text" required>
+
+        <label for="year">Year:</label>
+        <input type="text" name="year">
+
+        <label for="topic">Topic:</label>
+        <input type="text" name="topic">
+
+        <button type="submit">Add Question</button>
+    </form>
+</body>
+</html>

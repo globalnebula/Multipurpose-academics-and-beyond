@@ -21,11 +21,15 @@
     </form>
 
     <div class="card" id="searchResults">
-        {% for result in search_results %}
-            <div class="result-card">
-                <p>{{ result }}</p>
-            </div>
-        {% endfor %}
+        {% if search_results %}
+            {% for result in search_results %}
+                <div class="result-card">
+                    <p>{{ result.question }} (Year: {{ result.year }}, Topic: {{ result.topic }})</p>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No results found.</p>
+        {% endif %}
     </div>
 </body>
 </html>
