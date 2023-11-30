@@ -25,6 +25,8 @@ class User(UserMixin, db.Model):
 class Questions(db.Model):
     sno = db.Column(db.Integer, primary_key=True)
     question = db.Column(db.String(250), nullable=False, unique=True)
+    year = db.Column(db.Integer,nullable=True)
+    topic = db.Column(db.String(300))
 
 with app.app_context():
     db.create_all()
@@ -49,10 +51,14 @@ def login():
 
     return render_template('login.html')
 
-@app.route('/home')#, method="POST")
+
+@app.route('/home', methods=['GET', 'POST'])
 @login_required
 def home():
-    return render_template('home.html')
+    search_results = []
+
+    return render_template('home.html', search_results=search_results)
+
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
