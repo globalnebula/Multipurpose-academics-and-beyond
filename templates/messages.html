@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages</title>
+</head>
+<body>
+
+<div class="row">
+    <div class="col-md-12">
+        <h2>Broadcast Messages</h2>
+        <ul id="broadcast-messages">
+            {% for message in messages %}
+            <div class="message">
+                <p>{{ message.content }}</p>
+                <span class="username">{{ message.user.username }}</span>
+                {% if message.timestamp %}
+                <span class="timestamp">({{ message.timestamp.strftime('%Y-%m-%d %H:%M:%S') }})</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+        </ul>
+    </div>
+</div>
+
+<script>
+    // Handle incoming broadcast messages
+    socket.on('broadcast_message', function(data) {
+        var broadcastMessagesList = document.getElementById('broadcast-messages');
+        var messageItem = document.createElement('li');
+        var formattedTimestamp = new Date(data.timestamp).toLocaleString(); // Format the timestamp
+
+        messageItem.innerHTML = `
+            <strong>${data.sender_username}:</strong> ${data.content} 
+            <span class="timestamp">(${formattedTimestamp})</span>`;
+        broadcastMessagesList.appendChild(messageItem);
+    });
+
+    // You can add more JavaScript code here to handle other functionalities
+
+</script>
+</body>
+</html>
