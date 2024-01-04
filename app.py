@@ -4,7 +4,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_migrate import Migrate
 from flask_login import LoginManager, login_user, UserMixin, login_required, current_user
 from flask_socketio import SocketIO, emit
+from flask_socketio import join_room, leave_room
 from sqlalchemy import or_  
+from flask import jsonify
 
 
 app = Flask(__name__)
@@ -30,8 +32,11 @@ class User(UserMixin, db.Model):
 
 from datetime import datetime
 
-
-
+class Message(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(20), nullable=False)
+    message = db.Column(db.String(250), nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
 ADMIN_USERNAME = 'admin'
 ADMIN_PASSWORD = 'admin'
@@ -126,6 +131,44 @@ def register():
         db.session.commit()
 
     return render_template('register.html')
+
+
+messages = []
+
+messages = []
+
+@app.route('/chat', methods=['GET', 'POST'])
+@login_required
+def chat():
+    if request.method == 'POST':
+        message_text = request.form.get('message')
+        username = current_user.username
+
+        # Save the message to the database
+        new_message = Message(username=username, message=message_text)
+        db.session.add(new_message)
+        db.session.commit()
+
+        # Broadcast the message to all clients in the 'chat' room
+        socketio.emit('message', {'id': new_message.id, 'username': username, 'message': message_text, 'timestamp': str(new_message.timestamp)}, room='chat')
+
+    # Retrieve all messages from the database
+    chat_messages = Message.query.all()
+
+    # Render the chat template with the list of messages
+    return render_template('chat.html', messages=chat_messages)
+
+@socketio.on('join')
+def handle_join(data):
+    username = current_user.username
+
+    # Join the 'chat' room when a user connects
+    join_room('chat')
+
+    # Emit previous messages to the newly joined user
+    previous_messages = Message.query.all()
+    for message in previous_messages:
+        socketio.emit('message', {'id': message.id, 'username': message.username, 'message': message.message, 'timestamp': str(message.timestamp)}, room=request.sid)
 
 
 if __name__ == "__main__":

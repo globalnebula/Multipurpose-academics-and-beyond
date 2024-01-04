@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    {% block content %}
+    <h2>Chat Room</h2>
+    <div id="messages">
+      {% for message in messages %}
+        <div><b>{{ message.username }}:</b> {{ message.message }} ({{ message.timestamp }})</div>
+      {% endfor %}
+    </div>
+    <form id="messageForm" action="" method="post">
+      <input type="text" id="messageInput" name="message" placeholder="Type your message...">
+      <button type="submit">Send</button>
+    </form>
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.1.3/socket.io.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        var socket = io.connect('http://' + document.domain + ':' + location.port);
+  
+        socket.on('message', function (data) {
+          var messageDiv = document.createElement('div');
+          messageDiv.innerHTML = '<b>' + data.username + ':</b> ' + data.message + ' (' + data.timestamp + ')';
+          document.getElementById('messages').appendChild(messageDiv);
+        });
+  
+        document.querySelector('#messageForm').onsubmit = function () {
+          var messageInput = document.querySelector('#messageInput');
+          socket.emit('join', {});
+          socket.emit('message', { message: messageInput.value });
+          messageInput.value = '';  // Clear the input after sending a message
+          return false;
+        };
+      });
+    </script>
+  {% endblock %}
+</body>
+</html>
