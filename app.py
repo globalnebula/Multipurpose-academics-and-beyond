@@ -33,9 +33,13 @@ from datetime import datetime
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.String(200))
-    user_id = db.Column(db.Integer, db.ForeignKey('user.sno'))
-    user = db.relationship('User', backref=db.backref('messages', lazy=True))
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)  # Add this line for timestamp
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.sno'))
+    sender = db.relationship('User', backref=db.backref('sent_messages', lazy=True))
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    @property
+    def full_username(self):
+        return f"{self.sender.username}"
 
 
 ADMIN_USERNAME = 'admin'
@@ -146,61 +150,50 @@ def messages():
 def broadcast():
     if request.method == 'POST':
         message_content = request.form.get('message_content')
+        group = request.form.get('group')
 
         if message_content:
             # Save the broadcast message to the database
-            new_message = Message(content=message_content, user=current_user)
+            new_message = Message(content=message_content, sender=current_user)
             db.session.add(new_message)
             db.session.commit()
 
-            # Broadcast the message to all clients
-            socketio.emit('broadcast_message', {
-                'content': message_content,
-                'sender_username': current_user.username,
-                'timestamp': new_message.timestamp.strftime('%Y-%m-%d %H:%M:%S')
-            }, namespace='/', broadcast=True)
+            # Broadcast the message to all clients or a specific group
+            if group == 'all':
+                socketio.emit('broadcast_message', {
+                    'content': message_content,
+                    'full_username': new_message.full_username,
+                    'timestamp': new_message.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+                }, namespace='/', broadcast=True)
+            else:
+                socketio.emit('group_message', {
+                    'content': message_content,
+                    'full_username': new_message.full_username,
+                    'timestamp': new_message.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+                }, room=group)
 
             flash('Message broadcasted successfully!')
 
-    return render_template('broadcast.html')
-
-
+    return render_template('broadcast.html', full_username=current_user.username)
 
 @socketio.on('broadcast_message')
 def handle_broadcast_message(data):
-    user_id = get_user_id()
+    sender_id = get_user_id()
 
-    if user_id:
-        sender = User.query.get(user_id)
+    if sender_id:
+        sender = User.query.get(sender_id)
         content = data.get('content')
 
         if content:
             # Save the broadcast message to the database
-            new_broadcast_message = Message(content=content, user=sender)
+            new_broadcast_message = Message(content=content, sender=sender)
             db.session.add(new_broadcast_message)
             db.session.commit()
 
             # Broadcast the message to all connected clients
             socketio.emit('broadcast_message', {
                 'content': content,
-                'sender_username': sender.username,
-                'timestamp': new_broadcast_message.timestamp.strftime('%Y-%m-%d %H:%M:%S')
-            }, namespace='/', broadcast=True)
-
-    if user_id:
-        sender = User.query.get(user_id)
-        content = data.get('content')
-
-        if content:
-            # Save the broadcast message to the database
-            new_broadcast_message = Message(content=content, sender=sender, recipient_id=None)
-            db.session.add(new_broadcast_message)
-            db.session.commit()
-
-            # Broadcast the message to all connected clients
-            socketio.emit('broadcast_message', {
-                'content': content,
-                'sender_username': sender.username,
+                'full_username': new_broadcast_message.full_username,
                 'timestamp': new_broadcast_message.timestamp.strftime('%Y-%m-%d %H:%M:%S')
             }, namespace='/', broadcast=True)
     else:
