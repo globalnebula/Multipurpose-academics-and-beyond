@@ -143,19 +143,15 @@ def chat():
     if request.method == 'POST':
         message_text = request.form.get('message')
         username = current_user.username
-
-        # Save the message to the database
+        
         new_message = Message(username=username, message=message_text)
         db.session.add(new_message)
         db.session.commit()
 
-        # Broadcast the message to all clients in the 'chat' room
         socketio.emit('message', {'id': new_message.id, 'username': username, 'message': message_text, 'timestamp': str(new_message.timestamp)}, room='chat')
 
-    # Retrieve all messages from the database
     chat_messages = Message.query.all()
 
-    # Render the chat template with the list of messages
     return render_template('chat.html', messages=chat_messages)
 
 @socketio.on('join')
