@@ -1,21 +1,20 @@
-from flask import Flask, render_template, request, redirect, url_for, flash,session
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_migrate import Migrate
 from flask_login import LoginManager, login_user, UserMixin, login_required, current_user
-from flask_socketio import SocketIO, emit
-from flask_socketio import join_room, leave_room
-from sqlalchemy import or_  
-from flask import jsonify
-
+from flask_socketio import SocketIO, emit, join_room, leave_room
+from sqlalchemy import or_
+from datetime import datetime
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///database.db"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = 'AJ94c36aUhnp5ACooY7X6kIc4qgVubLY'
+
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 socketio = SocketIO(app)
-app.config['SECRET_KEY'] = 'AJ94c36aUhnp5ACooY7X6kIc4qgVubLY'
 
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
@@ -26,16 +25,15 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(50), nullable=False, unique=True)
     password = db.Column(db.String(128), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
+    messages = db.relationship('Message', backref='user', lazy=True)
 
     def get_id(self):
         return str(self.sno)
 
-from datetime import datetime
-
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(20), nullable=False)
-    message = db.Column(db.String(250), nullable=False)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.sno'), nullable=False)
+    content = db.Column(db.String(250), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
 ADMIN_USERNAME = 'admin'
@@ -50,16 +48,12 @@ class Questions(db.Model):
 with app.app_context():
     db.create_all()
 
-
-
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-
 def get_user_id():
     return session.get('user_id', None)
-
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
@@ -132,40 +126,32 @@ def register():
 
     return render_template('register.html')
 
-
-messages = []
-
-messages = []
-
-@app.route('/chat', methods=['GET', 'POST'])
+@app.route('/chat')
 @login_required
 def chat():
-    if request.method == 'POST':
-        message_text = request.form.get('message')
-        username = current_user.username
-        
-        new_message = Message(username=username, message=message_text)
-        db.session.add(new_message)
-        db.session.commit()
-
-        socketio.emit('message', {'id': new_message.id, 'username': username, 'message': message_text, 'timestamp': str(new_message.timestamp)}, room='chat')
-
-    chat_messages = Message.query.all()
-
-    return render_template('chat.html', messages=chat_messages)
+    return render_template('chat.html', current_user=current_user)
 
 @socketio.on('join')
-def handle_join(data):
-    username = current_user.username
+def handle_join():
+    join_room('chat_room')
+    emit('message', {'content': f'{current_user.username} has joined the chat room.'}, room='chat_room')
 
-    # Join the 'chat' room when a user connects
-    join_room('chat')
+@socketio.on('leave')
+def handle_leave():
+    leave_room('chat_room')
+    emit('message', {'content': f'{current_user.username} has left the chat room.'}, room='chat_room')
 
-    # Emit previous messages to the newly joined user
-    previous_messages = Message.query.all()
-    for message in previous_messages:
-        socketio.emit('message', {'id': message.id, 'username': message.username, 'message': message.message, 'timestamp': str(message.timestamp)}, room=request.sid)
+@socketio.on('message')
+def handle_message(data):
+    new_message = Message(sender_id=current_user.sno, content=data['content'])
+    db.session.add(new_message)
+    db.session.commit()
 
+    emit('message', {
+        'sender': current_user.username,
+        'content': data['content'],
+        'timestamp': new_message.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+    }, room='chat_room')
 
 if __name__ == "__main__":
     socketio.run(app, port="1908", debug=True)
