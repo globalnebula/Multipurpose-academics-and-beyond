@@ -38,6 +38,15 @@
             messages.appendChild(li);
         });
 
+        socket.on('previous_messages', function(data) {
+            var messages = document.getElementById('messages');
+            data.messages.forEach(function(message) {
+                var li = document.createElement('li');
+                li.appendChild(document.createTextNode(`${message.sender} (${message.timestamp}): ${message.content}`));
+                messages.appendChild(li);
+            });
+        });
+
         function sendMessage() {
             var contentInput = document.getElementById('content_input');
             var content = contentInput.value;

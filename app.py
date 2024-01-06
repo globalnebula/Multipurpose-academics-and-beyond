@@ -134,7 +134,16 @@ def chat():
 @socketio.on('join')
 def handle_join():
     join_room('chat_room')
-    emit('message', {'content': f'{current_user.username} has joined the chat room.'}, room='chat_room')
+    emit_previous_messages()
+
+def emit_previous_messages():
+    messages = Message.query.order_by(Message.timestamp).all()
+    formatted_messages = [{
+        'sender': message.user.username,
+        'content': message.content,
+        'timestamp': message.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+    } for message in messages]
+    emit('previous_messages', {'messages': formatted_messages}, room='chat_room')
 
 @socketio.on('leave')
 def handle_leave():
