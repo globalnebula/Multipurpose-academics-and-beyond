@@ -35,6 +35,16 @@ class Message(db.Model):
     sender_id = db.Column(db.Integer, db.ForeignKey('user.sno'), nullable=False)
     content = db.Column(db.String(250), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    reply_to = db.Column(db.Integer, db.ForeignKey('message.id'))
+    replies = db.relationship('Message', backref=db.backref('parent', remote_side=[id]))
+    message_type = db.Column(db.String(50))  # Rename 'type' to 'message_type'
+
+    def __init__(self, sender_id, content, message_type=None, reply_to=None):
+        self.sender_id = sender_id
+        self.content = content
+        self.message_type = message_type
+        self.reply_to = reply_to
+
 
 ADMIN_USERNAME = 'admin'
 ADMIN_PASSWORD = 'admin'
@@ -152,15 +162,46 @@ def handle_leave():
 
 @socketio.on('message')
 def handle_message(data):
-    new_message = Message(sender_id=current_user.sno, content=data['content'])
-    db.session.add(new_message)
-    db.session.commit()
+    if data['type'] == 'reply' and data['reply_to'] is not None:
+        parent_message = Message.query.get(data['reply_to'])
+        if parent_message:
+            new_reply = Message(sender_id=current_user.sno, content=data['content'], reply_to=parent_message.id)
+            db.session.add(new_reply)
+            db.session.commit()
 
-    emit('message', {
-        'sender': current_user.username,
-        'content': data['content'],
-        'timestamp': new_message.timestamp.strftime('%Y-%m-%d %H:%M:%S')
-    }, room='chat_room')
+            emit('message', {
+                'sender': current_user.username,
+                'content': data['content'],
+                'timestamp': new_reply.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+                'type': 'reply',  # Set the type to 'reply' for the replied message
+                'reply_to': parent_message.id
+            }, room='chat_room')
+        else:
+            # Handle the case where parent_message is not found
+            emit('error', {'message': 'Parent message not found'}, room=request.sid)
+    elif data['type'] != 'reply':
+        # Handle regular messages
+        new_message = Message(sender_id=current_user.sno, content=data['content'], message_type=data['type'])
+        db.session.add(new_message)
+        db.session.commit()
+
+        reply_button = ''
+        if data['type'] == 'request':
+            reply_button = f'<span class="reply-btn" onclick="replyToMessage(\'{current_user.username}\', \'{data["content"]}\')">Reply</span>'
+
+        emit('message', {
+            'sender': current_user.username,
+            'content': data['content'],
+            'timestamp': new_message.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+            'type': data['type'],
+            'replyBtn': reply_button
+        }, room='chat_room')
+    else:
+        # Handle the case where data['type'] is 'reply' but data['reply_to'] is None
+        emit('error', {'message': 'Invalid reply data'}, room=request.sid)
+
+
+
 
 if __name__ == "__main__":
     socketio.run(app, port="1908", debug=True)
