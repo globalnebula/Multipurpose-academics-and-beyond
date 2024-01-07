@@ -104,7 +104,7 @@
         if (content.trim() !== '') {
             socket.emit('message', {
                 'content': content,
-                'type': messageType  // Make sure to include the messageType
+                'type': messageType  
             });
             contentInput.value = '';
         }
@@ -125,10 +125,9 @@
     // Set the message content in the modal
     replyMessage.textContent = `Replying to ${sender}: ${content}`;
 
-    // Show the modal
+
     replyModal.style.display = 'block';
 
-    // Add 'selected' class to the clicked message
     var selectedMessage = document.querySelector('.message.selected');
     if (selectedMessage) {
         selectedMessage.classList.remove('selected');
