@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post Ride</title>
+    
+    <!-- Leaflet CSS and JavaScript -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <style>
+        /* Add your custom styles here */
+        #map {
+            height: 300px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h1>Post Ride</h1>
+    
+    <form method="POST" action="{{ url_for('post_ride') }}">
+        <label for="passengers">Number of Passengers:</label>
+        <input type="number" name="passengers" required>
+        
+        <label for="starting_point">Starting Point:</label>
+        <input type="text" name="starting_point" id="starting_point" required>
+
+        <label for="destination">Destination:</label>
+        <input type="text" name="destination" id="destination" required>
+
+        <label for="starting_time">Starting Time:</label>
+        <input type="datetime-local" name="starting_time" required>
+
+        <!-- Map to display starting point and destination -->
+        <div id="map"></div>
+
+        <button type="submit">Post Ride</button>
+    </form>
+
+    <script>
+        // Leaflet Map initialization
+        var map = L.map('map').setView([0, 0], 2);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Leaflet Marker initialization
+        var startingPointMarker = L.marker([0, 0], { draggable: true, title: 'Starting Point' }).addTo(map);
+        var destinationMarker = L.marker([0, 0], { draggable: true, title: 'Destination' }).addTo(map);
+
+        // Leaflet Autocomplete initialization
+        var startingPointInput = document.getElementById('starting_point');
+        var destinationInput = document.getElementById('destination');
+
+        var autocompleteStartingPoint = new L.Control.Autocomplete({ element: startingPointInput }).addTo(map);
+        var autocompleteDestination = new L.Control.Autocomplete({ element: destinationInput }).addTo(map);
+
+        // Leaflet Event listeners
+        startingPointMarker.on('dragend', function (e) {
+            startingPointInput.value = e.target.getLatLng().lat + ', ' + e.target.getLatLng().lng;
+        });
+
+        destinationMarker.on('dragend', function (e) {
+            destinationInput.value = e.target.getLatLng().lat + ', ' + e.target.getLatLng().lng;
+        });
+
+        // Update marker position when autocomplete suggestion is selected
+        autocompleteStartingPoint.on('autocomplete:selected', function (event) {
+            startingPointMarker.setLatLng(event.latlng);
+        });
+
+        autocompleteDestination.on('autocomplete:selected', function (event) {
+            destinationMarker.setLatLng(event.latlng);
+        });
+    </script>
+</body>
+</html>
