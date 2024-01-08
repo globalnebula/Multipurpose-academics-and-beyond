@@ -26,6 +26,7 @@ class User(UserMixin, db.Model):
     password = db.Column(db.String(128), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
     messages = db.relationship('Message', backref='user', lazy=True)
+    ride_options = db.relationship('RideOption', backref='user', lazy=True)
 
     def get_id(self):
         return str(self.sno)
@@ -45,6 +46,21 @@ class Message(db.Model):
         self.message_type = message_type
         self.reply_to = reply_to
 
+class RideOption(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.sno'), nullable=False)
+    passengers = db.Column(db.Integer, nullable=False)
+    starting_point = db.Column(db.String(100), nullable=False)
+    destination = db.Column(db.String(100), nullable=False)
+    starting_time = db.Column(db.DateTime, nullable=False)
+    is_accepted = db.Column(db.Boolean, default=False)
+
+    def __init__(self, user_id, passengers, starting_point, destination, starting_time):
+        self.user_id = user_id
+        self.passengers = passengers
+        self.starting_point = starting_point
+        self.destination = destination
+        self.starting_time = starting_time
 
 ADMIN_USERNAME = 'admin'
 ADMIN_PASSWORD = 'admin'
@@ -141,6 +157,34 @@ def register():
 def chat():
     return render_template('chat.html', current_user=current_user)
 
+@app.route('/post_ride', methods=['GET', 'POST'])
+@login_required
+def post_ride():
+    if request.method == 'POST':
+        passengers = request.form.get('passengers')
+        starting_point = request.form.get('starting_point')
+        destination = request.form.get('destination')
+        starting_time = request.form.get('starting_time')
+
+        ride_option = RideOption(user_id=current_user.sno, passengers=passengers, starting_point=starting_point,
+                                 destination=destination, starting_time=starting_time)
+        db.session.add(ride_option)
+        db.session.commit()
+        flash('Ride option posted successfully!')
+
+    return render_template('post_ride.html')
+
+@app.route('/accept_ride/<int:ride_id>', methods=['POST'])
+@login_required
+def accept_ride(ride_id):
+    ride_option = RideOption.query.get(ride_id)
+    if ride_option:
+        ride_option.is_accepted = True
+        db.session.commit()
+        flash('Ride request accepted successfully!')
+
+    return redirect(url_for('home'))
+
 @socketio.on('join')
 def handle_join():
     join_room('chat_room')
@@ -199,9 +243,6 @@ def handle_message(data):
     else:
         # Handle the case where data['type'] is 'reply' but data['reply_to'] is None
         emit('error', {'message': 'Invalid reply data'}, room=request.sid)
-
-
-
 
 if __name__ == "__main__":
     socketio.run(app, port="1908", debug=True)
