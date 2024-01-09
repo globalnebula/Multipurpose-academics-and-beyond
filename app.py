@@ -81,16 +81,26 @@ def load_user(user_id):
 def get_user_id():
     return session.get('user_id', None)
 
+def is_admin():
+    if current_user.username == ADMIN_USERNAME:
+        return True
+    else:
+        return False
+
 @app.route('/', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
         user = User.query.filter_by(username=username).first()
+        
+        
 
         if user and check_password_hash(user.password, password):
             login_user(user)
-
+            
+            
+            
             if user.is_admin:
                 return redirect(url_for('admin_dashboard'))
             else:
@@ -144,9 +154,13 @@ def register():
         if existing_user:
             flash('User already exists!')
             return redirect(url_for('login'))
+        
+        
 
         hashed_password = generate_password_hash(password)
         new_user = User(username=username, email=email, password=hashed_password)
+        if username == ADMIN_USERNAME:
+            new_user = User(username=username, email=email, password=hashed_password, is_admin = True)
         db.session.add(new_user)
         db.session.commit()
 
