@@ -170,7 +170,7 @@ def register():
 @login_required
 def show_rides():
     # Fetch all posted rides from the database
-    rides = Ride.query.all()
+    rides = RideOption.query.all()
     return render_template('rides.html', rides=rides)
 
 # Inside your Flask app
@@ -179,13 +179,16 @@ def show_rides():
 @login_required
 def respond_to_ride(ride_id):
     # Fetch the ride based on ride_id
-    ride = Ride.query.get(ride_id)
+    ride_option = RideOption.query.get(ride_id)
 
-    # Add logic to handle the response (e.g., update the number of passengers, mark as accepted, etc.)
-    # ...
+    # Add logic to handle the response (e.g., update the is_accepted field)
+    if ride_option:
+        ride_option.is_accepted = True
+        db.session.commit()
+        flash('Ride request accepted successfully!')
 
-    flash('Ride responded successfully!')
-    return redirect(url_for('show_rides'))
+    return redirect(url_for('home'))
+
 
 
 @app.route('/chat')
