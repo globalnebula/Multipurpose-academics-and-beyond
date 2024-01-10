@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ride Chat Room</title>
+    <title>Chat Room</title>
     <style>
         #messages {
             list-style-type: none;
@@ -26,10 +26,6 @@
             background-color: #ffe6e6;  /* Light red for request messages */
         }
 
-        .ride-message {
-            background-color: #e6ffe6;  /* Light green for ride-related messages */
-        }
-
         .reply-btn {
             cursor: pointer;
             color: blue;
@@ -50,7 +46,7 @@
     </style>
 </head>
 <body>
-    <h1>Ride Chat Room</h1>
+    <h1>Chat Room</h1>
     <ul id="messages"></ul>
     <form onsubmit="sendMessage(); return false;">
         <input id="content_input" autocomplete="off">
@@ -102,22 +98,17 @@
             });
         });
 
-        socket.on('join_ride_chat', function(data) {
-            // Join the ride chat room
-            socket.emit('join_ride_chat', { ride_option_id: data.ride_option_id });
-        });
-
         function sendMessage() {
-            var contentInput = document.getElementById('content_input');
-            var content = contentInput.value;
-            if (content.trim() !== '') {
-                socket.emit('message', {
-                    'content': content,
-                    'type': messageType
-                });
-                contentInput.value = '';
-            }
+        var contentInput = document.getElementById('content_input');
+        var content = contentInput.value;
+        if (content.trim() !== '') {
+            socket.emit('message', {
+                'content': content,
+                'type': messageType  
+            });
+            contentInput.value = '';
         }
+    }
 
         document.getElementById('broadcastBtn').addEventListener('click', function() {
             messageType = 'broadcast';
@@ -128,20 +119,22 @@
         });
 
         function replyToMessage(sender, content) {
-            var replyModal = document.getElementById('replyModal');
-            var replyMessage = document.getElementById('replyMessage');
+    var replyModal = document.getElementById('replyModal');
+    var replyMessage = document.getElementById('replyMessage');
 
-            // Set the message content in the modal
-            replyMessage.textContent = `Replying to ${sender}: ${content}`;
+    // Set the message content in the modal
+    replyMessage.textContent = `Replying to ${sender}: ${content}`;
 
-            replyModal.style.display = 'block';
 
-            var selectedMessage = document.querySelector('.message.selected');
-            if (selectedMessage) {
-                selectedMessage.classList.remove('selected');
-            }
-            event.target.closest('.message').classList.add('selected');
-        }
+    replyModal.style.display = 'block';
+
+    var selectedMessage = document.querySelector('.message.selected');
+    if (selectedMessage) {
+        selectedMessage.classList.remove('selected');
+    }
+    event.target.closest('.message').classList.add('selected');
+}
+
 
         function sendReply() {
             var replyContent = document.getElementById('replyContent').value;
@@ -149,7 +142,7 @@
                 socket.emit('message', {
                     'content': replyContent,
                     'type': 'reply',
-                    'reply_to': getSelectedMessageId()
+                    'reply_to': getSelectedMessageId()  // You need a function to get the selected message ID
                 });
 
                 // Close the reply modal
@@ -159,14 +152,15 @@
             }
         }
 
+        // You need a function to get the selected message ID
         function getSelectedMessageId() {
             var selectedMessageElement = document.querySelector('.message.selected');
-            if (selectedMessageElement) {
-                return selectedMessageElement.dataset.id;
-            }
+        if (selectedMessageElement) {
+            return selectedMessageElement.dataset.id;
+        }
 
-            // Return a default value or handle the case when no message is selected
-            return null;
+        // Return a default value or handle the case when no message is selected
+        return null;
         }
     </script>
 </body>
