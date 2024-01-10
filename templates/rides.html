@@ -1,0 +1,34 @@
+<!-- Inside your templates folder (create one if not present) -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Available Rides</title>
+</head>
+<body>
+    <h1>Available Rides</h1>
+
+    {% if rides %}
+        <ul>
+            {% for ride in rides %}
+                <li>
+                    <strong>Starting Point:</strong> {{ ride.starting_point }}<br>
+                    <strong>Destination:</strong> {{ ride.destination }}<br>
+                    <strong>Passengers:</strong> {{ ride.passengers }}<br>
+                    <strong>Starting Time:</strong> {{ ride.starting_time }}<br>
+
+                    <!-- Add a form to respond to the ride -->
+                    <form method="POST" action="{{ url_for('respond_to_ride', ride_id=ride.id) }}">
+                        <button type="submit">Respond to Ride</button>
+                    </form>
+                </li>
+                <br>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No rides available.</p>
+    {% endif %}
+</body>
+</html>

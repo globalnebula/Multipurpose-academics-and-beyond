@@ -166,6 +166,28 @@ def register():
 
     return render_template('register.html')
 
+@app.route('/rides', methods=['GET'])
+@login_required
+def show_rides():
+    # Fetch all posted rides from the database
+    rides = Ride.query.all()
+    return render_template('rides.html', rides=rides)
+
+# Inside your Flask app
+
+@app.route('/respond/<int:ride_id>', methods=['POST'])
+@login_required
+def respond_to_ride(ride_id):
+    # Fetch the ride based on ride_id
+    ride = Ride.query.get(ride_id)
+
+    # Add logic to handle the response (e.g., update the number of passengers, mark as accepted, etc.)
+    # ...
+
+    flash('Ride responded successfully!')
+    return redirect(url_for('show_rides'))
+
+
 @app.route('/chat')
 @login_required
 def chat():
