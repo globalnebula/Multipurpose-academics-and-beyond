@@ -190,10 +190,10 @@ def respond_to_ride(ride_id):
 
 # Placeholder function to create a chat room for the ride participants
 def create_ride_chat(ride_option_id):
-    # Add your logic here to create a chat room for the participants of the given ride_option_id
-    # This could involve creating a new ChatRoom object, associating users, etc.
-    # Customize this based on your application's chat functionality
-    pass
+    room_name = f'ride_chat_{ride_option_id}'
+    # Check if the room already exists
+    if room_name not in socketio.rooms:
+        socketio.create_namespace(room_name)
 
 @socketio.on('join_ride_chat')
 def join_ride_chat(data):
@@ -204,11 +204,13 @@ def join_ride_chat(data):
         # Ride creator joins the chat room
         room_name = f'ride_chat_{ride_option_id}'
         join_room(room_name)
+        create_ride_chat(ride_option_id)
         emit_previous_messages(room_name)
     elif ride_option and ride_option.is_accepted and current_user.sno in [ride_option.user_id, ...]:  # Add other user IDs
         # Users who responded and ride creator join the chat room
         room_name = f'ride_chat_{ride_option_id}'
         join_room(room_name)
+        create_ride_chat(ride_option_id)
         emit_previous_messages(room_name)
     else:
         emit('error', {'message': 'Invalid access to ride chat'}, room=request.sid)
