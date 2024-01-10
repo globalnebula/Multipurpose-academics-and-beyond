@@ -93,14 +93,10 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
         user = User.query.filter_by(username=username).first()
-        
-        
 
         if user and check_password_hash(user.password, password):
             login_user(user)
-            
-            
-            
+
             if user.is_admin:
                 return redirect(url_for('admin_dashboard'))
             else:
@@ -154,13 +150,11 @@ def register():
         if existing_user:
             flash('User already exists!')
             return redirect(url_for('login'))
-        
-        
 
         hashed_password = generate_password_hash(password)
         new_user = User(username=username, email=email, password=hashed_password)
         if username == ADMIN_USERNAME:
-            new_user = User(username=username, email=email, password=hashed_password, is_admin = True)
+            new_user = User(username=username, email=email, password=hashed_password, is_admin=True)
         db.session.add(new_user)
         db.session.commit()
 
@@ -173,23 +167,51 @@ def show_rides():
     rides = RideOption.query.all()
     return render_template('rides.html', rides=rides)
 
-# Inside your Flask app
-
 @app.route('/respond/<int:ride_id>', methods=['POST'])
 @login_required
 def respond_to_ride(ride_id):
-    # Fetch the ride based on ride_id
     ride_option = RideOption.query.get(ride_id)
 
-    # Add logic to handle the response (e.g., update the is_accepted field)
-    if ride_option:
+    if ride_option and not ride_option.is_accepted and ride_option.passengers > 0:
+        # Decrease the number of passengers by one
+        ride_option.passengers -= 1
+
+        # Add logic to handle the response (e.g., mark as accepted, create chat room, etc.)
         ride_option.is_accepted = True
+        create_ride_chat(ride_option.id)
+
         db.session.commit()
-        flash('Ride request accepted successfully!')
 
-    return redirect(url_for('home'))
+        flash('Ride responded successfully!')
+    else:
+        flash('Invalid ride response or no available seats.')
 
+    return redirect(url_for('show_rides'))
 
+# Placeholder function to create a chat room for the ride participants
+def create_ride_chat(ride_option_id):
+    # Add your logic here to create a chat room for the participants of the given ride_option_id
+    # This could involve creating a new ChatRoom object, associating users, etc.
+    # Customize this based on your application's chat functionality
+    pass
+
+@socketio.on('join_ride_chat')
+def join_ride_chat(data):
+    ride_option_id = data.get('ride_option_id')
+    ride_option = RideOption.query.get(ride_option_id)
+
+    if ride_option and current_user.sno == ride_option.user_id:
+        # Ride creator joins the chat room
+        room_name = f'ride_chat_{ride_option_id}'
+        join_room(room_name)
+        emit_previous_messages(room_name)
+    elif ride_option and ride_option.is_accepted and current_user.sno in [ride_option.user_id, ...]:  # Add other user IDs
+        # Users who responded and ride creator join the chat room
+        room_name = f'ride_chat_{ride_option_id}'
+        join_room(room_name)
+        emit_previous_messages(room_name)
+    else:
+        emit('error', {'message': 'Invalid access to ride chat'}, room=request.sid)
 
 @app.route('/chat')
 @login_required
@@ -200,29 +222,31 @@ def chat():
 @login_required
 def post_ride():
     if request.method == 'POST':
-        passengers = request.form.get('passengers')
+        passengers = int(request.form.get('passengers'))  # Convert to int
         starting_point = request.form.get('starting_point')
         destination = request.form.get('destination')
-        starting_time = request.form.get('starting_time')
+        starting_time_str = request.form.get('starting_time')
 
-        ride_option = RideOption(user_id=current_user.sno, passengers=passengers, starting_point=starting_point,
-                                 destination=destination, starting_time=starting_time)
+        # Convert string to datetime
+        starting_time = datetime.strptime(starting_time_str, '%Y-%m-%dT%H:%M')
+
+        ride_option = RideOption(
+            user_id=current_user.sno,
+            passengers=passengers,
+            starting_point=starting_point,
+            destination=destination,
+            starting_time=starting_time
+        )
+
         db.session.add(ride_option)
         db.session.commit()
+
+        # Create a chat room for the ride
+        room_name = f'ride_chat_{ride_option.id}'
+        join_room(room_name)
         flash('Ride option posted successfully!')
 
     return render_template('post_ride.html')
-
-@app.route('/accept_ride/<int:ride_id>', methods=['POST'])
-@login_required
-def accept_ride(ride_id):
-    ride_option = RideOption.query.get(ride_id)
-    if ride_option:
-        ride_option.is_accepted = True
-        db.session.commit()
-        flash('Ride request accepted successfully!')
-
-    return redirect(url_for('home'))
 
 @socketio.on('join')
 def handle_join():
