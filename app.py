@@ -78,15 +78,6 @@ with app.app_context():
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-def get_user_id():
-    return session.get('user_id', None)
-
-def is_admin():
-    if current_user.username == ADMIN_USERNAME:
-        return True
-    else:
-        return False
-
 @app.route('/', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -188,12 +179,10 @@ def respond_to_ride(ride_id):
 
     return redirect(url_for('show_rides'))
 
-# Placeholder function to create a chat room for the ride participants
 def create_ride_chat(ride_option_id):
     room_name = f'ride_chat_{ride_option_id}'
-    # Check if the room already exists
-    if room_name not in socketio.rooms:
-        socketio.create_namespace(room_name)
+    join_room(room_name)
+    emit_previous_messages(room_name)
 
 @socketio.on('join_ride_chat')
 def join_ride_chat(data):
@@ -271,43 +260,41 @@ def handle_leave():
 
 @socketio.on('message')
 def handle_message(data):
-    if data['type'] == 'reply' and data['reply_to'] is not None:
-        parent_message = Message.query.get(data['reply_to'])
-        if parent_message:
-            new_reply = Message(sender_id=current_user.sno, content=data['content'], reply_to=parent_message.id)
-            db.session.add(new_reply)
+    if 'type' in data:
+        if data['type'] == 'reply' and data['reply_to'] is not None:
+            parent_message = Message.query.get(data['reply_to'])
+            if parent_message:
+                new_reply = Message(sender_id=current_user.sno, content=data['content'], reply_to=parent_message.id)
+                db.session.add(new_reply)
+                db.session.commit()
+
+                emit('message', {
+                    'sender': current_user.username,
+                    'content': data['content'],
+                    'timestamp': new_reply.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+                    'type': 'reply',  # Set the type to 'reply' for the replied message
+                    'reply_to': parent_message.id
+                }, room='chat_room')
+            else:
+                emit('error', {'message': 'Parent message not found'}, room=request.sid)
+        elif data['type'] != 'reply':
+            new_message = Message(sender_id=current_user.sno, content=data['content'], message_type=data['type'])
+            db.session.add(new_message)
             db.session.commit()
+
+            reply_button = ''
+            if data['type'] == 'request':
+                reply_button = f'<span class="reply-btn" onclick="replyToMessage(\'{current_user.username}\', \'{data["content"]}\')">Reply</span>'
 
             emit('message', {
                 'sender': current_user.username,
                 'content': data['content'],
-                'timestamp': new_reply.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
-                'type': 'reply',  # Set the type to 'reply' for the replied message
-                'reply_to': parent_message.id
+                'timestamp': new_message.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+                'type': data['type'],
+                'replyBtn': reply_button
             }, room='chat_room')
         else:
-            # Handle the case where parent_message is not found
-            emit('error', {'message': 'Parent message not found'}, room=request.sid)
-    elif data['type'] != 'reply':
-        # Handle regular messages
-        new_message = Message(sender_id=current_user.sno, content=data['content'], message_type=data['type'])
-        db.session.add(new_message)
-        db.session.commit()
-
-        reply_button = ''
-        if data['type'] == 'request':
-            reply_button = f'<span class="reply-btn" onclick="replyToMessage(\'{current_user.username}\', \'{data["content"]}\')">Reply</span>'
-
-        emit('message', {
-            'sender': current_user.username,
-            'content': data['content'],
-            'timestamp': new_message.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
-            'type': data['type'],
-            'replyBtn': reply_button
-        }, room='chat_room')
-    else:
-        # Handle the case where data['type'] is 'reply' but data['reply_to'] is None
-        emit('error', {'message': 'Invalid reply data'}, room=request.sid)
+            emit('error', {'message': 'Invalid reply data'}, room=request.sid)
 
 if __name__ == "__main__":
     socketio.run(app, port="1908", debug=True)
