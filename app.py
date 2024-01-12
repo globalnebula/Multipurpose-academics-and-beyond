@@ -2,10 +2,13 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_migrate import Migrate
-from flask_login import LoginManager, login_user, UserMixin, login_required, current_user
+from flask_login import LoginManager, UserMixin, login_user, login_required, current_user
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from sqlalchemy import or_
 from datetime import datetime
+from flask_wtf import FlaskForm
+from wtforms import IntegerField, StringField, DateTimeField, DateField, SelectField
+from wtforms.validators import DataRequired
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///database.db"
@@ -53,14 +56,16 @@ class RideOption(db.Model):
     starting_point = db.Column(db.String(100), nullable=False)
     destination = db.Column(db.String(100), nullable=False)
     starting_time = db.Column(db.DateTime, nullable=False)
+    mode_of_transport = db.Column(db.String(50), nullable=False)
     is_accepted = db.Column(db.Boolean, default=False)
 
-    def __init__(self, user_id, passengers, starting_point, destination, starting_time):
+    def __init__(self, user_id, passengers, starting_point, destination, starting_time, mode_of_transport):
         self.user_id = user_id
         self.passengers = passengers
         self.starting_point = starting_point
         self.destination = destination
         self.starting_time = starting_time
+        self.mode_of_transport = mode_of_transport
 
 ADMIN_USERNAME = 'admin'
 ADMIN_PASSWORD = 'admin'
@@ -70,6 +75,16 @@ class Questions(db.Model):
     question = db.Column(db.String(250), nullable=False, unique=True)
     year = db.Column(db.Integer, nullable=True)
     topic = db.Column(db.String(300))
+
+
+class PostRideForm(FlaskForm):
+    passengers = IntegerField('Passengers', validators=[DataRequired()])
+    starting_point = StringField('Starting Point', validators=[DataRequired()])
+    destination = StringField('Destination', validators=[DataRequired()])
+    start_time = DateTimeField('Start Time', format='%Y-%m-%dT%H:%M', validators=[DataRequired()])
+    start_date = DateField('Start Date', format='%Y-%m-%d', validators=[DataRequired()])
+    mode_of_transport = SelectField('Mode of Transport', choices=[('car', 'Car'), ('bike', 'Bike'), ('bus', 'Bus')], validators=[DataRequired()])
+
 
 with app.app_context():
     db.create_all()
@@ -145,7 +160,7 @@ def register():
         hashed_password = generate_password_hash(password)
         new_user = User(username=username, email=email, password=hashed_password)
         if username == ADMIN_USERNAME:
-            new_user = User(username=username, email=email, password=hashed_password, is_admin=True)
+            new_user.is_admin = True
         db.session.add(new_user)
         db.session.commit()
 
@@ -169,7 +184,6 @@ def respond_to_ride(ride_id):
 
         # Add logic to handle the response (e.g., mark as accepted, create chat room, etc.)
         ride_option.is_accepted = True
-        create_ride_chat(ride_option.id)
 
         db.session.commit()
 
@@ -179,31 +193,6 @@ def respond_to_ride(ride_id):
 
     return redirect(url_for('show_rides'))
 
-def create_ride_chat(ride_option_id):
-    room_name = f'ride_chat_{ride_option_id}'
-    join_room(room_name)
-    emit_previous_messages(room_name)
-
-@socketio.on('join_ride_chat')
-def join_ride_chat(data):
-    ride_option_id = data.get('ride_option_id')
-    ride_option = RideOption.query.get(ride_option_id)
-
-    if ride_option and current_user.sno == ride_option.user_id:
-        # Ride creator joins the chat room
-        room_name = f'ride_chat_{ride_option_id}'
-        join_room(room_name)
-        create_ride_chat(ride_option_id)
-        emit_previous_messages(room_name)
-    elif ride_option and ride_option.is_accepted and current_user.sno in [ride_option.user_id, ...]:  # Add other user IDs
-        # Users who responded and ride creator join the chat room
-        room_name = f'ride_chat_{ride_option_id}'
-        join_room(room_name)
-        create_ride_chat(ride_option_id)
-        emit_previous_messages(room_name)
-    else:
-        emit('error', {'message': 'Invalid access to ride chat'}, room=request.sid)
-
 @app.route('/chat')
 @login_required
 def chat():
@@ -212,32 +201,32 @@ def chat():
 @app.route('/post_ride', methods=['GET', 'POST'])
 @login_required
 def post_ride():
-    if request.method == 'POST':
-        passengers = int(request.form.get('passengers'))  # Convert to int
-        starting_point = request.form.get('starting_point')
-        destination = request.form.get('destination')
-        starting_time_str = request.form.get('starting_time')
+    form = PostRideForm()
 
-        # Convert string to datetime
-        starting_time = datetime.strptime(starting_time_str, '%Y-%m-%dT%H:%M')
+    if form.validate_on_submit():
+        passengers = form.passengers.data
+        starting_point = form.starting_point.data
+        destination = form.destination.data
+        start_time = form.start_time.data
+        start_date = form.start_date.data
+        mode_of_transport = form.mode_of_transport.data
 
         ride_option = RideOption(
             user_id=current_user.sno,
             passengers=passengers,
             starting_point=starting_point,
             destination=destination,
-            starting_time=starting_time
+            start_time=start_time,
+            start_date=start_date,
+            mode_of_transport=mode_of_transport
         )
 
         db.session.add(ride_option)
         db.session.commit()
 
-        # Create a chat room for the ride
-        room_name = f'ride_chat_{ride_option.id}'
-        join_room(room_name)
-        flash('Ride option posted successfully!')
+        return render_template('post_ride.html', form=form, success_message='Ride posted successfully!')
 
-    return render_template('post_ride.html')
+    return render_template('post_ride.html', form=form)
 
 @socketio.on('join')
 def handle_join():
@@ -297,4 +286,4 @@ def handle_message(data):
             emit('error', {'message': 'Invalid reply data'}, room=request.sid)
 
 if __name__ == "__main__":
-    socketio.run(app, port="1908", debug=True)
+    socketio.run(app, port=1908, debug=True)
