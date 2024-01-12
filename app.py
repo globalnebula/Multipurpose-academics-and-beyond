@@ -55,12 +55,14 @@ class RideOption(db.Model):
     passengers = db.Column(db.Integer, nullable=False)
     starting_point = db.Column(db.String(100), nullable=False)
     destination = db.Column(db.String(100), nullable=False)
-    starting_time = db.Column(db.DateTime, nullable=False)
+    start_date = db.Column(db.Date, nullable=False)
+    starting_time = db.Column(db.Time, nullable=False)
     mode_of_transport = db.Column(db.String(50), nullable=False)
     is_accepted = db.Column(db.Boolean, default=False)
 
-    def __init__(self, user_id, passengers, starting_point, destination, starting_time, mode_of_transport):
+    def __init__(self, user_id, passengers, starting_point, destination,start_date, starting_time, mode_of_transport):
         self.user_id = user_id
+        self.start_date = start_date
         self.passengers = passengers
         self.starting_point = starting_point
         self.destination = destination

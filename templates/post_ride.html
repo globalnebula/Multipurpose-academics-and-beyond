@@ -47,6 +47,7 @@
         }
 
         input,
+        select,
         button {
             width: 100%;
             padding: 10px;
@@ -108,39 +109,64 @@
     <script>
         // Leaflet Map initialization
         var map = L.map('map').setView([0, 0], 2);
-
+    
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
-
+    
+        // Get user's location and set the map view
+        function getUserLocation() {
+            if ('geolocation' in navigator) {
+                navigator.geolocation.getCurrentPosition(function (position) {
+                    var userLat = position.coords.latitude;
+                    var userLng = position.coords.longitude;
+    
+                    map.setView([userLat, userLng], 13);
+    
+                    // Set starting point marker at the user's location
+                    startingPointMarker.setLatLng([userLat, userLng]);
+    
+                    // Add a marker for the user's location
+                    L.marker([userLat, userLng], { title: 'Your Location' }).addTo(map);
+                }, function (error) {
+                    console.error('Error getting user location:', error.message);
+                });
+            } else {
+                console.error('Geolocation is not supported by your browser');
+            }
+        }
+    
+        getUserLocation();
+    
         // Leaflet Marker initialization
         var startingPointMarker = L.marker([0, 0], { draggable: true, title: 'Starting Point' }).addTo(map);
         var destinationMarker = L.marker([0, 0], { draggable: true, title: 'Destination' }).addTo(map);
-
+    
         // Leaflet Autocomplete initialization
         var startingPointInput = document.getElementById('starting_point');
         var destinationInput = document.getElementById('destination');
-
+    
         var autocompleteStartingPoint = new L.Control.Autocomplete({ element: startingPointInput }).addTo(map);
         var autocompleteDestination = new L.Control.Autocomplete({ element: destinationInput }).addTo(map);
-
+    
         // Leaflet Event listeners
         startingPointMarker.on('dragend', function (e) {
             startingPointInput.value = e.target.getLatLng().lat + ', ' + e.target.getLatLng().lng;
         });
-
+    
         destinationMarker.on('dragend', function (e) {
             destinationInput.value = e.target.getLatLng().lat + ', ' + e.target.getLatLng().lng;
         });
-
+    
         // Update marker position when autocomplete suggestion is selected
         autocompleteStartingPoint.on('autocomplete:selected', function (event) {
             startingPointMarker.setLatLng(event.latlng);
         });
-
+    
         autocompleteDestination.on('autocomplete:selected', function (event) {
             destinationMarker.setLatLng(event.latlng);
         });
     </script>
+    
 </body>
 </html>
