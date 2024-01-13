@@ -58,9 +58,10 @@ class RideOption(db.Model):
     start_date = db.Column(db.Date, nullable=False)
     starting_time = db.Column(db.Time, nullable=False)
     mode_of_transport = db.Column(db.String(50), nullable=False)
+    cost = db.Column(db.Integer, nullable=False)  # Added cost field
     is_accepted = db.Column(db.Boolean, default=False)
 
-    def __init__(self, user_id, passengers, starting_point, destination,start_date, starting_time, mode_of_transport):
+    def __init__(self, user_id, passengers, starting_point, destination, start_date, starting_time, mode_of_transport, cost):
         self.user_id = user_id
         self.start_date = start_date
         self.passengers = passengers
@@ -68,6 +69,8 @@ class RideOption(db.Model):
         self.destination = destination
         self.starting_time = starting_time
         self.mode_of_transport = mode_of_transport
+        self.cost = cost
+
 
 ADMIN_USERNAME = 'admin'
 ADMIN_PASSWORD = 'admin'
@@ -85,7 +88,9 @@ class PostRideForm(FlaskForm):
     destination = StringField('Destination', validators=[DataRequired()])
     start_time = DateTimeField('Start Time', format='%Y-%m-%dT%H:%M', validators=[DataRequired()])
     start_date = DateField('Start Date', format='%Y-%m-%d', validators=[DataRequired()])
-    mode_of_transport = SelectField('Mode of Transport', choices=[('car', 'Car'), ('bike', 'Bike'), ('bus', 'Bus')], validators=[DataRequired()])
+    mode_of_transport = SelectField('Mode of Transport', choices=[('auto', 'Auto'), ('car', 'Car'), ('van', 'Van'), ('bike', 'Bike')], validators=[DataRequired()])
+    cost = IntegerField('Cost', validators=[DataRequired()])
+
 
 
 with app.app_context():
