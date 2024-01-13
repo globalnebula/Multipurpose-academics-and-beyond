@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -24,11 +25,13 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
+            background-color: #f4f4f4;
         }
 
         h1 {
             text-align: center;
             margin-bottom: 20px;
+            color: #333;
         }
 
         form {
@@ -36,7 +39,7 @@
             max-width: 600px;
             margin: 20px auto;
             padding: 20px;
-            background-color: #f8f8f8;
+            background-color: #fff;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
@@ -44,6 +47,7 @@
         label {
             display: block;
             margin-bottom: 8px;
+            color: #333;
         }
 
         input,
@@ -53,12 +57,24 @@
             padding: 10px;
             margin-bottom: 15px;
             box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        select {
+            appearance: none;
+            background: url('https://img.icons8.com/material-outlined/24/000000/down.png') no-repeat right #fff;
+            background-size: 24px;
+            padding-right: 30px;
         }
 
         #map {
             height: 300px;
             width: 100%;
             margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
         }
 
         button {
@@ -74,6 +90,7 @@
         }
     </style>
 </head>
+
 <body>
     <h1>Post Ride</h1>
 
@@ -100,6 +117,9 @@
             <option value="bus">Bus</option>
         </select>
 
+        <label for="cost">Cost:</label>
+        <input type="number" name="cost" required>
+
         <!-- Map to display starting point and destination -->
         <div id="map"></div>
 
@@ -109,23 +129,23 @@
     <script>
         // Leaflet Map initialization
         var map = L.map('map').setView([0, 0], 2);
-    
+
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
-    
+
         // Get user's location and set the map view
         function getUserLocation() {
             if ('geolocation' in navigator) {
                 navigator.geolocation.getCurrentPosition(function (position) {
                     var userLat = position.coords.latitude;
                     var userLng = position.coords.longitude;
-    
+
                     map.setView([userLat, userLng], 17);
-    
+
                     // Set starting point marker at the user's location
                     startingPointMarker.setLatLng([userLat, userLng]);
-    
+
                     // Add a marker for the user's location
                     L.marker([userLat, userLng], { title: 'Your Location' }).addTo(map);
                 }, function (error) {
@@ -135,39 +155,39 @@
                 console.error('Geolocation is not supported by your browser');
             }
         }
-    
+
         getUserLocation();
-    
+
         // Leaflet Marker initialization
         var startingPointMarker = L.marker([0, 0], { draggable: true, title: 'Starting Point' }).addTo(map);
         var destinationMarker = L.marker([0, 0], { draggable: true, title: 'Destination' }).addTo(map);
-    
+
         // Leaflet Autocomplete initialization
         var startingPointInput = document.getElementById('starting_point');
         var destinationInput = document.getElementById('destination');
-    
+
         var autocompleteStartingPoint = new L.Control.Autocomplete({ element: startingPointInput }).addTo(map);
         var autocompleteDestination = new L.Control.Autocomplete({ element: destinationInput }).addTo(map);
-    
+
         // Leaflet Event listeners
         startingPointMarker.on('dragend', function (e) {
             startingPointInput.value = e.target.getLatLng().lat + ', ' + e.target.getLatLng().lng;
         });
-    
+
         destinationMarker.on('dragend', function (e) {
             destinationInput.value = e.target.getLatLng().lat + ', ' + e.target.getLatLng().lng;
         });
-    
+
         // Update marker position when autocomplete suggestion is selected
         autocompleteStartingPoint.on('autocomplete:selected', function (event) {
             startingPointMarker.setLatLng(event.latlng);
         });
-    
+
         autocompleteDestination.on('autocomplete:selected', function (event) {
             destinationMarker.setLatLng(event.latlng);
         });
     </script>
-    
 
 </body>
+
 </html>

@@ -217,6 +217,7 @@ def post_ride():
         start_time = form.start_time.data
         start_date = form.start_date.data
         mode_of_transport = form.mode_of_transport.data
+        cost = form.cost.data
 
         ride_option = RideOption(
             user_id=current_user.sno,
@@ -225,7 +226,8 @@ def post_ride():
             destination=destination,
             start_time=start_time,
             start_date=start_date,
-            mode_of_transport=mode_of_transport
+            mode_of_transport=mode_of_transport,
+            cost=cost
         )
 
         db.session.add(ride_option)
