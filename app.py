@@ -60,6 +60,8 @@ class RideOption(db.Model):
     mode_of_transport = db.Column(db.String(50), nullable=False)
     cost = db.Column(db.Integer, default='INR' , nullable=False)  # Added cost field
     is_accepted = db.Column(db.Boolean, default=False)
+    accepted_by_user_id = db.Column(db.Integer, db.ForeignKey('user.sno'), nullable=True)
+    accepted_by_user = db.relationship('User', foreign_keys=[accepted_by_user_id])
 
     def __init__(self, user_id, passengers, starting_point, destination, start_date, starting_time, mode_of_transport, cost):
         self.user_id = user_id
@@ -180,6 +182,14 @@ def show_rides():
     rides = RideOption.query.all()
     return render_template('rides.html', rides=rides, currency_symbol='₹')
 
+@app.route('/rides', methods=['GET'])
+@login_required
+def show_rides():
+    # Fetch all posted rides from the database
+    rides = RideOption.query.all()
+    return render_template('rides.html', rides=rides, currency_symbol='₹')
+
+# Modify the respond_to_ride route to store the information of the user accepting the ride
 @app.route('/respond/<int:ride_id>', methods=['POST'])
 @login_required
 def respond_to_ride(ride_id):
@@ -191,14 +201,38 @@ def respond_to_ride(ride_id):
 
         # Add logic to handle the response (e.g., mark as accepted, create chat room, etc.)
         ride_option.is_accepted = True
+        ride_option.accepted_by_user_id = current_user.sno  # Store the user ID of the person accepting the ride
 
         db.session.commit()
 
         flash('Ride responded successfully!')
+
+        # Redirect to the user details page with the ID of the ride poster
+        return redirect(url_for('user_details', user_id=ride_option.user_id))
     else:
         flash('Invalid ride response or no available seats.')
 
     return redirect(url_for('show_rides'))
+
+
+# Add a new route to display the details of the user accepting the ride
+@app.route('/user_details/<int:user_id>', methods=['GET'])
+@login_required
+def user_details(user_id):
+    user = User.query.get(user_id)
+
+    if user:
+        # Check if the current user is the ride poster
+        if current_user.sno == user_id:
+            return render_template('user_details.html', user=user)
+        else:
+            flash('Access denied. You can only view details of users accepting your rides.')
+            return redirect(url_for('home'))
+    else:
+        flash('User details not found.')
+        return redirect(url_for('home'))
+
+
 
 @app.route('/chat')
 @login_required
