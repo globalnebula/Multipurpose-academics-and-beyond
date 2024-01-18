@@ -18,7 +18,7 @@
                     <strong>Destination:</strong> {{ ride.destination }}<br>
                     <strong>Passengers:</strong> {{ ride.passengers }}<br>
                     <strong>Starting Time:</strong> {{ ride.starting_time }}<br>
-
+                    <strong>Cost:</strong> {{ currency_symbol }} {ride.cost}<b</b>
                     <!-- Add a form to respond to the ride -->
                     <form method="POST" action="{{ url_for('respond_to_ride', ride_id=ride.id) }}">
                         <button type="submit">Respond to Ride</button>

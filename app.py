@@ -58,7 +58,7 @@ class RideOption(db.Model):
     start_date = db.Column(db.Date, nullable=False)
     starting_time = db.Column(db.Time, nullable=False)
     mode_of_transport = db.Column(db.String(50), nullable=False)
-    cost = db.Column(db.Integer, nullable=False)  # Added cost field
+    cost = db.Column(db.Integer, default='INR' , nullable=False)  # Added cost field
     is_accepted = db.Column(db.Boolean, default=False)
 
     def __init__(self, user_id, passengers, starting_point, destination, start_date, starting_time, mode_of_transport, cost):
@@ -178,7 +178,7 @@ def register():
 def show_rides():
     # Fetch all posted rides from the database
     rides = RideOption.query.all()
-    return render_template('rides.html', rides=rides)
+    return render_template('rides.html', rides=rides, currency_symbol='₹')
 
 @app.route('/respond/<int:ride_id>', methods=['POST'])
 @login_required
