@@ -10,9 +10,11 @@ from flask_wtf import FlaskForm
 from wtforms import IntegerField, StringField, DateTimeField, DateField, SelectField
 from wtforms.validators import DataRequired
 
+#GUIDE as the name for the application and tagline - Sharing and Scoring
+
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///database.db"
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 app.config['SECRET_KEY'] = 'AJ94c36aUhnp5ACooY7X6kIc4qgVubLY'
 
 db = SQLAlchemy(app)
@@ -29,7 +31,7 @@ class User(UserMixin, db.Model):
     password = db.Column(db.String(128), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
     messages = db.relationship('Message', backref='user', lazy=True)
-    ride_options = db.relationship('RideOption', backref='user', lazy=True)
+    ride_options = db.relationship('RideOption', backref='user', lazy=True, foreign_keys='RideOption.accepted_by_user_id')
 
     def get_id(self):
         return str(self.sno)
@@ -182,13 +184,6 @@ def show_rides():
     rides = RideOption.query.all()
     return render_template('rides.html', rides=rides, currency_symbol='₹')
 
-@app.route('/rides', methods=['GET'])
-@login_required
-def show_rides():
-    # Fetch all posted rides from the database
-    rides = RideOption.query.all()
-    return render_template('rides.html', rides=rides, currency_symbol='₹')
-
 # Modify the respond_to_ride route to store the information of the user accepting the ride
 @app.route('/respond/<int:ride_id>', methods=['POST'])
 @login_required
@@ -267,7 +262,7 @@ def post_ride():
         db.session.add(ride_option)
         db.session.commit()
 
-        return render_template('post_ride.html', form=form, success_message='Ride posted successfully!')
+        return render_template('rides.html', form=form, success_message='Ride posted successfully!')
 
     return render_template('post_ride.html', form=form)
 
