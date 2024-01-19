@@ -6,6 +6,7 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, cur
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from sqlalchemy import or_
 from datetime import datetime
+from flask import jsonify
 from flask_wtf import FlaskForm
 from wtforms import IntegerField, StringField, DateTimeField, DateField, SelectField
 from wtforms.validators import DataRequired
@@ -177,56 +178,56 @@ def register():
 
     return render_template('register.html')
 
+# ...
+
 @app.route('/rides', methods=['GET'])
 @login_required
 def show_rides():
+    # Fetch rides posted by the current user
+    user_rides = RideOption.query.filter_by(user_id=current_user.sno).all()
+
     # Fetch all posted rides from the database
     rides = RideOption.query.all()
-    return render_template('rides.html', rides=rides, currency_symbol='₹')
 
-# Modify the respond_to_ride route to store the information of the user accepting the ride
+    return render_template('rides.html', rides=rides, user_rides=user_rides, currency_symbol='₹')
+
+
 @app.route('/respond/<int:ride_id>', methods=['POST'])
 @login_required
 def respond_to_ride(ride_id):
     ride_option = RideOption.query.get(ride_id)
 
     if ride_option and not ride_option.is_accepted and ride_option.passengers > 0:
-        # Decrease the number of passengers by one
         ride_option.passengers -= 1
-
-        # Add logic to handle the response (e.g., mark as accepted, create chat room, etc.)
         ride_option.is_accepted = True
-        ride_option.accepted_by_user_id = current_user.sno  # Store the user ID of the person accepting the ride
-
+        ride_option.accepted_by_user_id = current_user.sno
         db.session.commit()
 
         flash('Ride responded successfully!')
 
-        # Redirect to the user details page with the ID of the ride poster
-        return redirect(url_for('user_details', user_id=ride_option.user_id))
+        return redirect(url_for('rides', user_id=ride_option.user_id))
     else:
         flash('Invalid ride response or no available seats.')
 
-    return redirect(url_for('show_rides'))
+    return redirect(url_for('rides'))
 
-
-# Add a new route to display the details of the user accepting the ride
-@app.route('/user_details/<int:user_id>', methods=['GET'])
+# Add a new route to display the details of the user's posted rides
+@app.route('/user_rides/<int:user_id>', methods=['GET'])
 @login_required
-def user_details(user_id):
+def show_user_rides(user_id):
     user = User.query.get(user_id)
 
     if user:
-        # Check if the current user is the ride poster
+        # Check if the current user is viewing their own rides
         if current_user.sno == user_id:
-            return render_template('user_details.html', user=user)
+            user_rides = RideOption.query.filter_by(user_id=user_id).all()
+            return render_template('user_rides.html', user=user, user_rides=user_rides)
         else:
-            flash('Access denied. You can only view details of users accepting your rides.')
+            flash('Access denied. You can only view your own rides.')
             return redirect(url_for('home'))
     else:
-        flash('User details not found.')
+        flash('User not found.')
         return redirect(url_for('home'))
-
 
 
 @app.route('/chat')
@@ -253,8 +254,8 @@ def post_ride():
             passengers=passengers,
             starting_point=starting_point,
             destination=destination,
-            start_time=start_time,
             start_date=start_date,
+            starting_time=start_time,  # corrected the field name
             mode_of_transport=mode_of_transport,
             cost=cost
         )
@@ -262,9 +263,13 @@ def post_ride():
         db.session.add(ride_option)
         db.session.commit()
 
-        return render_template('rides.html', form=form, success_message='Ride posted successfully!')
+        flash('Ride posted successfully!')
+
+        # Redirect to a route that shows the user's posted rides
+        return redirect(url_for('rides', user_id=current_user.sno))
 
     return render_template('post_ride.html', form=form)
+
 
 @socketio.on('join')
 def handle_join():
