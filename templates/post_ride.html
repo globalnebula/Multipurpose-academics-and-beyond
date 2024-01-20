@@ -169,7 +169,6 @@
         var autocompleteStartingPoint = new L.Control.Autocomplete({ element: startingPointInput }).addTo(map);
         var autocompleteDestination = new L.Control.Autocomplete({ element: destinationInput }).addTo(map);
 
-        // Leaflet Event listeners
         startingPointMarker.on('dragend', function (e) {
             startingPointInput.value = e.target.getLatLng().lat + ', ' + e.target.getLatLng().lng;
         });
