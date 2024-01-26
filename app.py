@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_migrate import Migrate
@@ -6,16 +6,13 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, cur
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from sqlalchemy import or_
 from datetime import datetime
-from flask import jsonify
 from flask_wtf import FlaskForm
 from wtforms import IntegerField, StringField, DateTimeField, DateField, SelectField
 from wtforms.validators import DataRequired
 
-#GUIDE as the name for the application and tagline - Sharing and Scoring
-
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///database.db"
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'AJ94c36aUhnp5ACooY7X6kIc4qgVubLY'
 
 db = SQLAlchemy(app)
@@ -26,16 +23,24 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
 class User(UserMixin, db.Model):
+    __tablename__ = 'user'
     sno = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), nullable=False, unique=True)
     email = db.Column(db.String(50), nullable=False, unique=True)
     password = db.Column(db.String(128), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
     messages = db.relationship('Message', backref='user', lazy=True)
-    ride_options = db.relationship('RideOption', backref='user', lazy=True, foreign_keys='RideOption.accepted_by_user_id')
+    accepted_ride_options = db.relationship('RideOption', 
+                                            foreign_keys="[RideOption.accepted_by_user_id]",
+                                            back_populates='accepted_by_user',
+                                            overlaps="ride_options,user")
+    ride_options = db.relationship("RideOption", 
+                                   foreign_keys="[RideOption.user_id]",
+                                   back_populates="user")
 
     def get_id(self):
         return str(self.sno)
+
 
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -44,7 +49,7 @@ class Message(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     reply_to = db.Column(db.Integer, db.ForeignKey('message.id'))
     replies = db.relationship('Message', backref=db.backref('parent', remote_side=[id]))
-    message_type = db.Column(db.String(50))  # Rename 'type' to 'message_type'
+    message_type = db.Column(db.String(50))
 
     def __init__(self, sender_id, content, message_type=None, reply_to=None):
         self.sender_id = sender_id
@@ -53,38 +58,30 @@ class Message(db.Model):
         self.reply_to = reply_to
 
 class RideOption(db.Model):
+    __tablename__ = 'ride_option'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.sno'), nullable=False)
+    user = db.relationship("User", foreign_keys=[user_id], backref="ride_options_created")
     passengers = db.Column(db.Integer, nullable=False)
     starting_point = db.Column(db.String(100), nullable=False)
     destination = db.Column(db.String(100), nullable=False)
     start_date = db.Column(db.Date, nullable=False)
     starting_time = db.Column(db.Time, nullable=False)
     mode_of_transport = db.Column(db.String(50), nullable=False)
-    cost = db.Column(db.Integer, default='INR' , nullable=False)  # Added cost field
+    cost = db.Column(db.Integer, default='INR', nullable=False)  # Added cost field
     is_accepted = db.Column(db.Boolean, default=False)
-    accepted_by_user_id = db.Column(db.Integer, db.ForeignKey('user.sno'), nullable=True)
-    accepted_by_user = db.relationship('User', foreign_keys=[accepted_by_user_id])
+    accepted_by_user_id = db.Column(db.Integer, db.ForeignKey('user.sno'))
+    accepted_by_user = db.relationship("User", foreign_keys=[accepted_by_user_id], backref="accepted_rides")
 
     def __init__(self, user_id, passengers, starting_point, destination, start_date, starting_time, mode_of_transport, cost):
         self.user_id = user_id
-        self.start_date = start_date
         self.passengers = passengers
         self.starting_point = starting_point
         self.destination = destination
+        self.start_date = start_date
         self.starting_time = starting_time
         self.mode_of_transport = mode_of_transport
         self.cost = cost
-
-
-ADMIN_USERNAME = 'admin'
-ADMIN_PASSWORD = 'admin'
-
-class Questions(db.Model):
-    sno = db.Column(db.Integer, primary_key=True)
-    question = db.Column(db.String(250), nullable=False, unique=True)
-    year = db.Column(db.Integer, nullable=True)
-    topic = db.Column(db.String(300))
 
 
 class PostRideForm(FlaskForm):
@@ -96,7 +93,14 @@ class PostRideForm(FlaskForm):
     mode_of_transport = SelectField('Mode of Transport', choices=[('auto', 'Auto'), ('car', 'Car'), ('van', 'Van'), ('bike', 'Bike')], validators=[DataRequired()])
     cost = IntegerField('Cost', validators=[DataRequired()])
 
+ADMIN_USERNAME = 'admin'
+ADMIN_PASSWORD = 'admin'
 
+class Questions(db.Model):
+    sno = db.Column(db.Integer, primary_key=True)
+    question = db.Column(db.String(250), nullable=False, unique=True)
+    year = db.Column(db.Integer, nullable=True)
+    topic = db.Column(db.String(300))
 
 with app.app_context():
     db.create_all()
@@ -121,7 +125,7 @@ def login():
                 return redirect(url_for('home'))
         else:
             flash('Incorrect username or password!')
-            return render_template('login.html')
+            return redirect(url_for('login'))
 
     return render_template('login.html')
 
@@ -178,18 +182,12 @@ def register():
 
     return render_template('register.html')
 
-# ...
-
 @app.route('/rides', methods=['GET'])
 @login_required
 def show_rides():
-    # Fetch rides posted by the current user
-    user_rides = RideOption.query.filter_by(user_id=current_user.sno).all()
-
-    # Fetch all posted rides from the database
+    # Query all ride options
     rides = RideOption.query.all()
-
-    return render_template('rides.html', rides=rides, user_rides=user_rides, currency_symbol='₹')
+    return render_template('rides.html', rides=rides, currency_symbol='₹')
 
 
 @app.route('/respond/<int:ride_id>', methods=['POST'])
@@ -204,21 +202,18 @@ def respond_to_ride(ride_id):
         db.session.commit()
 
         flash('Ride responded successfully!')
-
         return redirect(url_for('rides', user_id=ride_option.user_id))
     else:
         flash('Invalid ride response or no available seats.')
 
     return redirect(url_for('rides'))
 
-# Add a new route to display the details of the user's posted rides
 @app.route('/user_rides/<int:user_id>', methods=['GET'])
 @login_required
 def show_user_rides(user_id):
     user = User.query.get(user_id)
 
     if user:
-        # Check if the current user is viewing their own rides
         if current_user.sno == user_id:
             user_rides = RideOption.query.filter_by(user_id=user_id).all()
             return render_template('user_rides.html', user=user, user_rides=user_rides)
@@ -228,7 +223,6 @@ def show_user_rides(user_id):
     else:
         flash('User not found.')
         return redirect(url_for('home'))
-
 
 @app.route('/chat')
 @login_required
@@ -255,7 +249,7 @@ def post_ride():
             starting_point=starting_point,
             destination=destination,
             start_date=start_date,
-            starting_time=start_time,  # corrected the field name
+            starting_time=start_time,
             mode_of_transport=mode_of_transport,
             cost=cost
         )
@@ -264,12 +258,9 @@ def post_ride():
         db.session.commit()
 
         flash('Ride posted successfully!')
-
-        # Redirect to a route that shows the user's posted rides
         return redirect(url_for('rides', user_id=current_user.sno))
 
     return render_template('post_ride.html', form=form)
-
 
 @socketio.on('join')
 def handle_join():
@@ -304,7 +295,7 @@ def handle_message(data):
                     'sender': current_user.username,
                     'content': data['content'],
                     'timestamp': new_reply.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
-                    'type': 'reply',  # Set the type to 'reply' for the replied message
+                    'type': 'reply',
                     'reply_to': parent_message.id
                 }, room='chat_room')
             else:
