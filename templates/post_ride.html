@@ -123,6 +123,11 @@
         <!-- Map to display starting point and destination -->
         <div id="map"></div>
 
+        <input type="hidden" name="start_lat" id="start_lat">
+        <input type="hidden" name="start_lng" id="start_lng">
+        <input type="hidden" name="dest_lat" id="dest_lat">
+        <input type="hidden" name="dest_lng" id="dest_lng">
+
         <button type="submit">Post Ride</button>
     </form>
 
@@ -134,57 +139,119 @@
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
-        // Get user's location and set the map view
-        function getUserLocation() {
-            if ('geolocation' in navigator) {
-                navigator.geolocation.getCurrentPosition(function (position) {
-                    var userLat = position.coords.latitude;
-                    var userLng = position.coords.longitude;
+        // Define custom marker icons
+        var greenIcon = L.icon({
+            iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        });
 
-                    map.setView([userLat, userLng], 17);
+        var redIcon = L.icon({
+            iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        });
 
-                    // Set starting point marker at the user's location
-                    startingPointMarker.setLatLng([userLat, userLng]);
+             // Leaflet Marker initialization
+            var startingPointMarker = L.marker([0, 0], { draggable: true, title: 'Starting Point', icon: greenIcon }).addTo(map);
+            var destinationMarker = L.marker([0, 0], { draggable: true, title: 'Destination', icon: redIcon }).addTo(map);
 
-                    // Add a marker for the user's location
-                    L.marker([userLat, userLng], { title: 'Your Location' }).addTo(map);
-                }, function (error) {
-                    console.error('Error getting user location:', error.message);
-                });
-            } else {
-                console.error('Geolocation is not supported by your browser');
+            // Get user's location and set the map view
+            function getUserLocation() {
+                if ('geolocation' in navigator) {
+                    navigator.geolocation.getCurrentPosition(function (position) {
+                        var userLat = position.coords.latitude;
+                        var userLng = position.coords.longitude;
+
+                        map.setView([userLat, userLng], 17);
+
+                        // Set starting point marker at the user's location
+                        startingPointMarker.setLatLng([userLat, userLng]);
+                        document.getElementById('start_lat').value = userLat;
+                        document.getElementById('start_lng').value = userLng;
+
+                        // Add a marker for the user's location
+                        L.marker([userLat, userLng], { title: 'Your Location' }).addTo(map);
+                    }, function (error) {
+                        console.error('Error getting user location:', error.message);
+                    });
+                } else {
+                    console.error('Geolocation is not supported by your browser');
+                }
             }
-        }
 
-        getUserLocation();
+            getUserLocation();
 
-        // Leaflet Marker initialization
-        var startingPointMarker = L.marker([0, 0], { draggable: true, title: 'Starting Point' }).addTo(map);
-        var destinationMarker = L.marker([0, 0], { draggable: true, title: 'Destination' }).addTo(map);
+            // Update marker position when autocomplete suggestion is selected
+            autocompleteStartingPoint.on('select', function (event) {
+                startingPointMarker.setLatLng(event.latlng);
+                document.getElementById('start_lat').value = event.latlng.lat;
+                document.getElementById('start_lng').value = event.latlng.lng;
+            });
 
-        // Leaflet Autocomplete initialization
-        var startingPointInput = document.getElementById('starting_point');
-        var destinationInput = document.getElementById('destination');
+            autocompleteDestination.on('select', function (event) {
+                destinationMarker.setLatLng(event.latlng);
+                document.getElementById('dest_lat').value = event.latlng.lat;
+                document.getElementById('dest_lng').value = event.latlng.lng;
+            });
 
-        var autocompleteStartingPoint = new L.Control.Autocomplete({ element: startingPointInput }).addTo(map);
-        var autocompleteDestination = new L.Control.Autocomplete({ element: destinationInput }).addTo(map);
+            // Update marker position when marker is dragged
+            startingPointMarker.on('dragend', function (e) {
+                document.getElementById('start_lat').value = e.target.getLatLng().lat;
+                document.getElementById('start_lng').value = e.target.getLatLng().lng;
+            });
 
-        startingPointMarker.on('dragend', function (e) {
-            startingPointInput.value = e.target.getLatLng().lat + ', ' + e.target.getLatLng().lng;
-        });
+            destinationMarker.on('dragend', function (e) {
+                document.getElementById('dest_lat').value = e.target.getLatLng().lat;
+                document.getElementById('dest_lng').value = e.target.getLatLng().lng;
+            });
 
-        destinationMarker.on('dragend', function (e) {
-            destinationInput.value = e.target.getLatLng().lat + ', ' + e.target.getLatLng().lng;
-        });
+            // Update marker position when starting point input field is changed
+            startingPointInput.addEventListener('change', function () {
+                var address = this.value;
+                if (address.trim() !== '') {
+                    // Use geocoding to get coordinates for the provided address
+                    var geocoder = L.Control.Geocoder.nominatim();
+                    geocoder.geocode(address, function (results) {
+                        if (results.length > 0) {
+                            var latlng = results[0].center;
+                            startingPointMarker.setLatLng(latlng);
+                            map.setView(latlng);
+                            document.getElementById('start_lat').value = latlng.lat;
+                            document.getElementById('start_lng').value = latlng.lng;
+                        } else {
+                            alert('Location not found');
+                        }
+                    });
+                }
+            });
 
-        // Update marker position when autocomplete suggestion is selected
-        autocompleteStartingPoint.on('autocomplete:selected', function (event) {
-            startingPointMarker.setLatLng(event.latlng);
-        });
+            // Update marker position when destination input field is changed
+            destinationInput.addEventListener('change', function () {
+                var address = this.value;
+                if (address.trim() !== '') {
+                    // Use geocoding to get coordinates for the provided address
+                    var geocoder = L.Control.Geocoder.nominatim();
+                    geocoder.geocode(address, function (results) {
+                        if (results.length > 0) {
+                            var latlng = results[0].center;
+                            destinationMarker.setLatLng(latlng);
+                            map.setView(latlng);
+                            document.getElementById('dest_lat').value = latlng.lat;
+                            document.getElementById('dest_lng').value = latlng.lng;
+                        } else {
+                            alert('Location not found');
+                        }
+                    });
+                }
+            });
 
-        autocompleteDestination.on('autocomplete:selected', function (event) {
-            destinationMarker.setLatLng(event.latlng);
-        });
     </script>
 
 </body>
