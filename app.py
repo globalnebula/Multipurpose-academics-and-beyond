@@ -88,7 +88,7 @@ class PostRideForm(FlaskForm):
     passengers = IntegerField('Passengers', validators=[DataRequired()])
     starting_point = StringField('Starting Point', validators=[DataRequired()])
     destination = StringField('Destination', validators=[DataRequired()])
-    start_time = DateTimeField('Start Time', format='%Y-%m-%dT%H:%M', validators=[DataRequired()])
+    start_time = DateTimeField('Start Time', format='T%H:%M', validators=[DataRequired()])
     start_date = DateField('Start Date', format='%Y-%m-%d', validators=[DataRequired()])
     mode_of_transport = SelectField('Mode of Transport', choices=[('auto', 'Auto'), ('car', 'Car'), ('van', 'Van'), ('bike', 'Bike')], validators=[DataRequired()])
     cost = IntegerField('Cost', validators=[DataRequired()])
@@ -185,9 +185,10 @@ def register():
 @app.route('/rides', methods=['GET'])
 @login_required
 def show_rides():
-    # Query all ride options
+    user_rides = RideOption.query.filter_by(user_id=current_user.sno).all()
     rides = RideOption.query.all()
-    return render_template('rides.html', rides=rides, currency_symbol='₹')
+    return render_template('rides.html', rides=rides, user_rides=user_rides, currency_symbol='₹')
+
 
 
 @app.route('/respond/<int:ride_id>', methods=['POST'])
@@ -261,6 +262,7 @@ def post_ride():
         return redirect(url_for('rides', user_id=current_user.sno))
 
     return render_template('post_ride.html', form=form)
+
 
 @socketio.on('join')
 def handle_join():
