@@ -1,4 +1,4 @@
-<!-- Inside your templates folder (create one if not present) -->
+<!-- templates/rides.html -->
 
 <!DOCTYPE html>
 <html lang="en">
@@ -12,32 +12,36 @@
 
     {% if rides %}
     <ul>
-            <h2>All Rides</h2>
-            {% for ride in rides %}
-                <div>
-                    <!-- Display ride details -->
-                    {{ ride.starting_point }} to {{ ride.destination }} on {{ ride.start_date }} at {{ ride.starting_time }}
-                    Cost: {{ ride.cost }} {{ currency_symbol }} <!-- Add cost details -->
-                    Vacant Seats: {{ ride.passengers }} <!-- Add vacant seats details -->
-                    <!-- Add more details as needed -->
-                </div>
-            {% endfor %}
+        <h2>All Rides</h2>
+        {% for ride in rides %}
+        <div>
+            <!-- Display ride details -->
+            {{ ride.starting_point }} to {{ ride.destination }} on {{ ride.start_date }} at {{ ride.starting_time }}
+            Cost: {{ ride.cost }} {{ currency_symbol }} <!-- Add cost details -->
+            Vacant Seats: {{ ride.passengers }} <!-- Add vacant seats details -->
+            <!-- Add more details as needed -->
+        </div>
+        {% endfor %}
+    </ul>
+    {% endif %}
 
-            <h2>Your Rides</h2>
-            {% for user_ride in user_rides %}
-                <div>
-                    <!-- Display user ride details -->
-                    {{ user_ride.starting_point }} to {{ user_ride.destination }} on {{ user_ride.start_date }} at {{ user_ride.starting_time }}
-                    Cost: {{ user_ride.cost }} {{ currency_symbol }} <!-- Add cost details -->
-                    Vacant Seats: {{ user_ride.passengers }} <!-- Add vacant seats details -->
-                    <!-- Add more details as needed -->
-                </div>
-            {% endfor %}
+    {% if user_rides %}
+    <ul>
+        <h2>Your Rides</h2>
+        {% for user_ride in user_rides %}
+        <div>
+            <!-- Display user ride details -->
+            {{ user_ride.starting_point }} to {{ user_ride.destination }} on {{ user_ride.start_date }} at {{ user_ride.starting_time }}
+            Cost: {{ user_ride.cost }} {{ currency_symbol }} <!-- Add cost details -->
+            Vacant Seats: {{ user_ride.passengers }} <!-- Add vacant seats details -->
+            <!-- Add more details as needed -->
+        </div>
+        {% endfor %}
+    </ul>
+    {% endif %}
 
-
-        </ul>
-    {% else %}
-        <p>No rides available.</p>
+    {% if not rides and not user_rides %}
+    <p>No rides available.</p>
     {% endif %}
 </body>
 </html>

@@ -93,6 +93,12 @@
 
 <body>
     <h1>Post Ride</h1>
+    <script>
+        // Function to show a pop-up message
+        function showPopUp(message) {
+            alert(message); // You can replace alert with your custom notification logic
+        }
+    </script>
 
     <form method="POST" action="{{ url_for('post_ride') }}">
         <label for="passengers">Number of Passengers:</label>
@@ -112,9 +118,11 @@
 
         <label for="mode_of_transport">Mode of Transport:</label>
         <select name="mode_of_transport" id="mode_of_transport" required>
+            <option value="auto">Auto</option>
             <option value="car">Car</option>
-            <option value="bike">Bike</option>
             <option value="bus">Bus</option>
+            <option value="van">Van</option>
+            <option value="bike">Bike</option>
         </select>
 
         <label for="cost">Cost:</label>
@@ -128,7 +136,7 @@
         <input type="hidden" name="dest_lat" id="dest_lat">
         <input type="hidden" name="dest_lng" id="dest_lng">
 
-        <button type="submit">Post Ride</button>
+        <button type="submit", onclick="showPopUp('Ride posted successfully!')">Post Ride</button>
     </form>
 
     <script>
