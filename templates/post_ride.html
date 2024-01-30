@@ -101,6 +101,8 @@
     </script>
 
     <form method="POST" action="{{ url_for('post_ride') }}">
+        {{ form.hidden_tag() }} <!-- Add CSRF token -->
+
         <label for="passengers">Number of Passengers:</label>
         <input type="number" name="passengers" required>
 
@@ -111,10 +113,11 @@
         <input type="text" name="destination" id="destination" required>
 
         <label for="starting_time">Starting Time:</label>
-        <input type="datetime-local" name="starting_time" required>
+        <input type="datetime-local" name="starting_time" id="starting_time" required>
 
-        <label for="starting_date">Starting Date:</label>
-        <input type="date" name="starting_date" required>
+
+        <label for="start_date">Start Date:</label>
+        <input type="date" name="start_date" required>
 
         <label for="mode_of_transport">Mode of Transport:</label>
         <select name="mode_of_transport" id="mode_of_transport" required>
@@ -136,8 +139,9 @@
         <input type="hidden" name="dest_lat" id="dest_lat">
         <input type="hidden" name="dest_lng" id="dest_lng">
 
-        <button type="submit", onclick="showPopUp('Ride posted successfully!')">Post Ride</button>
+        <button type="submit">Post Ride</button>
     </form>
+
 
     <script>
         // Leaflet Map initialization

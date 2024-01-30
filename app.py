@@ -236,6 +236,7 @@ def post_ride():
     form = PostRideForm()
 
     if form.validate_on_submit():
+        print("Form validated successfully!")
         passengers = form.passengers.data
         starting_point = form.starting_point.data
         destination = form.destination.data
@@ -243,6 +244,14 @@ def post_ride():
         start_date = form.start_date.data
         mode_of_transport = form.mode_of_transport.data
         cost = form.cost.data
+
+        print(f"Passengers: {passengers}")
+        print(f"Starting Point: {starting_point}")
+        print(f"Destination: {destination}")
+        print(f"Start Time: {start_time}")
+        print(f"Start Date: {start_date}")
+        print(f"Mode of Transport: {mode_of_transport}")
+        print(f"Cost: {cost}")
 
         ride_option = RideOption(
             user_id=current_user.sno,
@@ -259,9 +268,15 @@ def post_ride():
         db.session.commit()
 
         flash('Ride posted successfully!')
-        return redirect(url_for('rides', user_id=current_user.sno))
+        return redirect(url_for('show_rides'))
+    else:
+        print("Form validation failed:", form.errors)
 
     return render_template('post_ride.html', form=form)
+
+
+
+    
 
 
 @socketio.on('join')
