@@ -162,6 +162,52 @@
         // Return a default value or handle the case when no message is selected
         return null;
         }
+
+        var socket = io.connect('http://' + document.domain + ':' + location.port);
+        var messageType = 'broadcast';  // Default to broadcast
+
+        socket.emit('join');
+
+        socket.on('message', function(data) {
+            var messages = document.getElementById('messages');
+            var li = document.createElement('li');
+
+            // Add different classes based on message type
+            li.className = `message ${data.type}-message`;
+
+            // Display reply button for request messages
+            var replyBtn = '';
+            if (data.type === 'request') {
+                replyBtn = `<span class="reply-btn" onclick="replyToMessage('${data.sender}', '${data.content}')">Reply</span>`;
+            }
+
+            li.innerHTML = `<div>${data.sender} (${data.timestamp}): ${data.content} ${replyBtn}</div>`;
+            messages.appendChild(li);
+
+            // Show notification
+            if (!document.hasFocus()) {
+                showNotification(data.sender, data.content);
+            }
+        });
+
+        // Request permission for notifications
+        if ("Notification" in window) {
+            Notification.requestPermission();
+        }
+
+        function showNotification(sender, content) {
+            if (Notification.permission === "granted") {
+                var notification = new Notification(sender, {
+                    body: content
+                });
+
+                notification.onclick = function() {
+                    // Redirect to the chat room
+                    window.focus();
+                    // You may want to handle the redirection here
+                };
+            }
+        }
     </script>
 </body>
 </html>
